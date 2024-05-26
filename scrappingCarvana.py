@@ -7,32 +7,62 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 
+#carvana
+#url = 'https://www.carvana.com/cars/filters?utm_source=google&utm_medium=sem_nb&utm_campaign=15848039259&utm_content=133778262124&utm_target=kwd-26668790&utm_creative=656002080421&utm_device=c&utm_adposition=&gad_source=1&gclid=EAIaIQobChMI3JKf5KibhgMVcUtHAR0tnw29EAAYASAAEgL4ffD_BwE&cvnaid=eyJmaWx0ZXJzIjp7Im1ha2VzIjpbeyJuYW1lIjoiQk1XIiwicGFyZW50TW9kZWxzIjpbeyJuYW1lIjoiTTMifV19XX19'
 
-url = 'https://www.carvana.com/cars/filters?utm_source=google&utm_medium=sem_nb&utm_campaign=15848039259&utm_content=133778262124&utm_target=kwd-26668790&utm_creative=656002080421&utm_device=c&utm_adposition=&gad_source=1&gclid=EAIaIQobChMI3JKf5KibhgMVcUtHAR0tnw29EAAYASAAEgL4ffD_BwE&cvnaid=eyJmaWx0ZXJzIjp7Im1ha2VzIjpbeyJuYW1lIjoiQk1XIiwicGFyZW50TW9kZWxzIjpbeyJuYW1lIjoiTTMifV19XX19'
+# Navigate to the website
+#url = "https://www.carvana.com/cars/filters?utm_source=google&utm_medium=sem_nb&utm_campaign=15848039259&utm_content=133778262124&utm_target=kwd-26668790&utm_creative=656002080421&utm_device=c&utm_adposition=&gad_source=1&gclid=EAIaIQobChMI3JKf5KibhgMVcUtHAR0tnw29EAAYASAAEgL4ffD_BwE&cvnaid=eyJmaWx0ZXJzIjp7Im1ha2VzIjpbeyJuYW1lIjoiQk1XIiwicGFyZW50TW9kZWxzIjpbeyJuYW1lIjoiTTMifV19XX19?lang=en"
 
+#cargurus
+#url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip=11219&inventorySearchWidgetType=AUTO&sortDir=ASC&sourceContext=cargurus&distance=50&sortType=BEST_MATCH&entitySelectingHelper.selectedEntity=d390"
 
-# driver = webdriver.Chrome()#unspecified path should look for path to chrome webdriver
-
-# driver.get(url)
-# time.sleep(5)
-
-# page_source = driver.page_source #get page source
-
-#parser
-response = requests.get(url)
-soup = BeautifulSoup(response.text, 'html.parser')
-time.sleep(5)
-print(soup.prettify())
+#cars.com
+url = "https://www.cars.com/shopping/brooklyn-ny/"
 
 
-m3Cars = soup.find_all('p', class_ = 'font-bold leading-[24px] text-[18px] truncate')
 
-print(m3Cars)
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+def source(url):
+    
+    # Set up Selenium WebDriver
+    chrome_options = Options()
+    # chrome_options.add_argument("--headless")  # This doesn't work for carvana because they have some Ddos protection by cloudflare. 
+    # It wont allow you to scrap their site programatically 
+    service = Service()  # Update with the path to your chromedriver, finds path of chromedriver w/o parameter
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver.get(url)
 
+    # Scroll down to load more listings
+    SCROLL_PAUSE_TIME = 3
+    last_height = driver.execute_script("return document.body.scrollHeight")
+    while True:
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(SCROLL_PAUSE_TIME)
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
 
-# miles = soup.find_all('p', class_ = 'HczmlC')
+    # Get page source and close the driver
+    page_source = driver.page_source
+    driver.quit()
+
+    return page_source
+
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+def parser(page_source):
+    soup = BeautifulSoup(page_source, "html.parser")
+    #print(soup)
+
+    listCars = soup.find_all('div', class_='inventory-main vehicle-card-main')
+    
+    return listCars
+
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 #csv conversion
 # file_name = 'm3listingmk1.csv'
@@ -41,17 +71,49 @@ print(m3Cars)
 #     csvwriter = csv.writer(csvfile)
 #     csvwriter.writerow(
 #         ['Car',
-#          'Miles']
+#          'Miles',
+#          'Price']
 #     )
 
-#     for car, miles in zip(m3Cars, miles):
-#         theCar = car.text
-#         m = miles.text
+#     for car in m3Cars:
+#         theCar = car.find('p', class_ = 'font-bold leading-[24px] text-[18px] truncate').text.strip()
+#         miles = car.find('span', class_ = 'shrink-0').text.strip()
+#         price = car.find('div', class_ = '-mb-[2px] flex font-bold gap-8 items-center text-2xl text-blue-6').text.strip()
 
+#         csvwriter.writerow([theCar, miles, price])
+
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+# def csvConvert(listOfCars, csvName, listOfInfo):
+#     file_name = csvName.append('.csv')
+
+#     with open(file_name, 'w', newline = '') as csvfile:
+#         csvwriter = csv.writer(csvfile)
 #         csvwriter.writerow(
-#             [theCar,
-#              m]
+#             ['Car',
+#             'Miles',
+#             'Price']
 #         )
+
+#         for car in m3Cars:
+#             theCar = car.find('p', class_ = 'font-bold leading-[24px] text-[18px] truncate').text.strip()
+#             miles = car.find('span', class_ = 'shrink-0').text.strip()
+#             price = car.find('div', class_ = '-mb-[2px] flex font-bold gap-8 items-center text-2xl text-blue-6').text.strip()
+
+#             csvwriter.writerow([theCar, miles, price])
+    
+#     return csvwriter
+
+
+    def main():
+
+        source = source(url)
+
+        html = parser(source)
+
+        
+
+
 
 
     
