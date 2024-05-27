@@ -20,8 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 #url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip=11219&inventorySearchWidgetType=AUTO&sortDir=ASC&sourceContext=cargurus&distance=50&sortType=BEST_MATCH&entitySelectingHelper.selectedEntity=d390"
 
 #cars.com
-url = "https://www.cars.com/shopping/brooklyn-ny/"
-
+#url = "https://www.cars.com/shopping/brooklyn-ny/"
 
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -54,11 +53,11 @@ def source(url):
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-def parser(page_source):
+def parsedCars(page_source, tag, clAss):
     soup = BeautifulSoup(page_source, "html.parser")
     #print(soup)
 
-    listCars = soup.find_all('div', class_='inventory-main vehicle-card-main')
+    listCars = soup.find_all(tag, class_= clAss)
     
     return listCars
 
@@ -84,34 +83,58 @@ def parser(page_source):
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-# def csvConvert(listOfCars, csvName, listOfInfo):
-#     file_name = csvName.append('.csv')
+def csvConvert(csvName, listOfCars, infoType, carInfo):
+    file_name = str(csvName) + '.csv'
 
-#     with open(file_name, 'w', newline = '') as csvfile:
-#         csvwriter = csv.writer(csvfile)
-#         csvwriter.writerow(
-#             ['Car',
-#             'Miles',
-#             'Price']
-#         )
+    with open(file_name, 'w', newline = '') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(infoType)
 
-#         for car in m3Cars:
-#             theCar = car.find('p', class_ = 'font-bold leading-[24px] text-[18px] truncate').text.strip()
-#             miles = car.find('span', class_ = 'shrink-0').text.strip()
-#             price = car.find('div', class_ = '-mb-[2px] flex font-bold gap-8 items-center text-2xl text-blue-6').text.strip()
+        for car in listOfCars:
+            currInfo = []
+            for tag, cass in carInfo:
+                info = car.find(tag, class_ = cass).text.strip()
+                currInfo.append(info)
+            csvwriter.writerow(currInfo)
 
-#             csvwriter.writerow([theCar, miles, price])
+    return csvwriter
+
+def csvConvertwMake(csvName, listOfCars, infoType, carInfo, make: str):
+    file_name = str(csvName) + '.csv'
+
+    with open(file_name, 'w', newline = '') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(infoType)
+
+        for car in listOfCars:
+            currInfo = []
+            for tag, cass in carInfo:
+                info = car.find(tag, class_ = cass).text.strip()
+                currInfo.append(info)
+
+            if currInfo[0].find(make) != -1:
+                csvwriter.writerow(currInfo)
+
+    return csvwriter
+
+
     
-#     return csvwriter
-
-
-    def main():
-
-        source = source(url)
-
-        html = parser(source)
-
+url = "https://www.cars.com/shopping/brooklyn-ny/#vehicle-card-0fcabc1e-e747-4ecd-8192-e9aba6dc38f5"
+TYPE = 'div'
+CLASS = 'vehicle-card vehicle-card-with-reviews ep-theme-hubcap'
+CSVNAME = 'carListings'
+LISTOFINFO = ['Car', 'Miles', 'Price', 'Owner Report']
+MAKE = "Ford"
+carInfo = [('h2', 'title'), ('div', 'mileage'), ('span', 'primary-price')]
         
+source = source(url)
+
+listOfCars = parsedCars(source, TYPE, CLASS)
+
+csvConvertwMake(CSVNAME, listOfCars, LISTOFINFO, carInfo, MAKE)
+
+
+
 
 
 
