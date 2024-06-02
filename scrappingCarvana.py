@@ -63,24 +63,6 @@ def parsedCars(page_source, tag, clAss):
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-#csv conversion
-# file_name = 'm3listingmk1.csv'
-
-# with open(file_name, 'w', newline = '') as csvfile:
-#     csvwriter = csv.writer(csvfile)
-#     csvwriter.writerow(
-#         ['Car',
-#          'Miles',
-#          'Price']
-#     )
-
-#     for car in m3Cars:
-#         theCar = car.find('p', class_ = 'font-bold leading-[24px] text-[18px] truncate').text.strip()
-#         miles = car.find('span', class_ = 'shrink-0').text.strip()
-#         price = car.find('div', class_ = '-mb-[2px] flex font-bold gap-8 items-center text-2xl text-blue-6').text.strip()
-
-#         csvwriter.writerow([theCar, miles, price])
-
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 def csvConvert(csvName, listOfCars, infoType, carInfo):
@@ -93,8 +75,13 @@ def csvConvert(csvName, listOfCars, infoType, carInfo):
         for car in listOfCars:
             currInfo = []
             for tag, cass in carInfo:
-                info = car.find(tag, class_ = cass).text.strip()
-                currInfo.append(info)
+                if cass == 'href':
+                    href_tag = car.find(tag)
+                    href = 'https://www.cars.com' + str(href_tag[cass])
+                    currInfo.append(href)
+                else:
+                    info = car.find(tag, class_ = cass).text.strip()
+                    currInfo.append(info)
             csvwriter.writerow(currInfo)
 
     return csvwriter
@@ -109,12 +96,19 @@ def csvConvertwMake(csvName, listOfCars, infoType, carInfo, make: str):
         for car in listOfCars:
             currInfo = []
             for tag, cass in carInfo:
-                info = car.find(tag, class_ = cass).text.strip()
-                currInfo.append(info)
-
-            if currInfo[0].find(make) != -1:
+                if cass == 'href':
+                    href_tag = car.find(tag)
+                    href = 'https://www.cars.com' + str(href_tag[cass])
+                    currInfo.append(href)
+                else:
+                    info = car.find(tag, class_ = cass).text.strip()
+                    currInfo.append(info)
+                
+            if currInfo[0].lower().find(make.lower()) != -1:
                 csvwriter.writerow(currInfo)
+                
 
+            
     return csvwriter
 
 
@@ -123,15 +117,14 @@ url = "https://www.cars.com/shopping/brooklyn-ny/#vehicle-card-0fcabc1e-e747-4ec
 TYPE = 'div'
 CLASS = 'vehicle-card vehicle-card-with-reviews ep-theme-hubcap'
 CSVNAME = 'carListings'
-LISTOFINFO = ['Car', 'Miles', 'Price', 'Owner Report']
-MAKE = "Ford"
-carInfo = [('h2', 'title'), ('div', 'mileage'), ('span', 'primary-price')]
+LISTOFINFO = ['Car', 'Miles', 'Price', 'Link']
+MAKE = "kIa"
+carInfo = [('h2', 'title'), ('div', 'mileage'), ('span', 'primary-price'), ('a', 'href')]
         
 source = source(url)
-
 listOfCars = parsedCars(source, TYPE, CLASS)
+csv = csvConvertwMake(CSVNAME, listOfCars, LISTOFINFO, carInfo, MAKE)
 
-csvConvertwMake(CSVNAME, listOfCars, LISTOFINFO, carInfo, MAKE)
 
 
 
